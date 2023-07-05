@@ -1,0 +1,31 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: build, tag, and push
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REPOSITORY:latest -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag cicd:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker tag cicd:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker image push --all-tags $ECR_REGISTRY/$ECR_REPOSITORY
+      - name: restart ecs Service
+        env:
+          CLUSET_NAME: ${{ secrets.AWS_CLUSET_NAME }}
+          SERVICE_NAME: ${{ secrets.AWS_SERVICE_NAME }}
+        run: |
+          aws ecs update-service --cluster $CLUSET_NAME --service $SERVICE_NAME --force-new-deployment
+
