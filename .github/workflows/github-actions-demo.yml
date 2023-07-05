@@ -30,7 +30,9 @@ jobs:
           ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
           ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
+          REGION: ${{ secrets.AWS_REGION }}
         run: |
+          aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
           docker build -t $ECR_REPOSITORY:latest -t $ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
